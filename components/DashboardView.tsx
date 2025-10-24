@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Briefcase, CalendarDays, Scale, Paperclip, Search, FileImage, WandSparkles, ListChecks, PlusCircle } from 'lucide-react';
+import { FileText, Briefcase, CalendarDays, Scale, Paperclip, Search, FileImage, WandSparkles, ListChecks, PlusCircle, ChevronDown } from 'lucide-react';
 import { format, isToday, isFuture } from 'date-fns';
 import AiButton from './AiButton';
 import { APP_VIEWS } from '../constants';
@@ -19,6 +19,7 @@ interface SectionProps {
   emptyText: string;
   children: React.ReactNode;
   headerContent?: React.ReactNode;
+  isCollapsible?: boolean;
 }
 interface DashboardViewProps {
   notes: Note[];
@@ -44,8 +45,10 @@ interface LayoutProps extends DashboardViewProps {
 // --- Reusable Sub-Components (defined outside main component) ---
 
 const NoteAttachments: React.FC<{ attachments: Attachment[] }> = ({ attachments }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+
     if (attachments.length === 0) {
-        return <span className="text-xs">No attachments</span>;
+        return <span className="text-xs text-base01 italic">No attachments</span>;
     }
 
     const getIcon = (type: Attachment['type']) => {
@@ -61,20 +64,42 @@ const NoteAttachments: React.FC<{ attachments: Attachment[] }> = ({ attachments 
         }
     };
     
-    const attachmentsToShow = attachments.slice(0, 3);
-    const hasMore = attachments.length > 3;
+    const listId = `attachments-list-${attachments[0]?.id || Math.random()}`;
 
     return (
-        <div className="space-y-2">
-            {attachmentsToShow.map(att => (
-                <div key={att.id} className="flex items-center gap-2 text-xs text-base01">
-                    {getIcon(att.type)}
-                    <span className="truncate" title={att.name}>{att.name}</span>
-                </div>
-            ))}
-            {hasMore && (
-                <div className="text-xs text-base01 font-medium pl-[24px]">...</div>
-            )}
+        <div>
+            <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="flex items-center gap-1 text-xs font-semibold text-base01 hover:text-base02 transition-colors"
+                aria-expanded={isExpanded}
+                aria-controls={listId}
+            >
+                <Paperclip className="w-3.5 h-3.5" />
+                <span>{attachments.length} Attachment{attachments.length > 1 ? 's' : ''}</span>
+                <motion.div animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                    <ChevronDown className="w-4 h-4" />
+                </motion.div>
+            </button>
+            <AnimatePresence>
+                {isExpanded && (
+                    <motion.div
+                        id={listId}
+                        initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                        animate={{ opacity: 1, height: 'auto', marginTop: '0.5rem' }}
+                        exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                        className="overflow-hidden"
+                    >
+                        <div className="space-y-2 border-l-2 border-base1 pl-3">
+                            {attachments.map(att => (
+                                <div key={att.id} className="flex items-center gap-2 text-xs text-base01">
+                                    {getIcon(att.type)}
+                                    <span className="truncate" title={att.name}>{att.name}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
@@ -98,24 +123,61 @@ const StatCard: React.FC<StatCardProps> = ({ icon, title, value, color }) => {
   );
 };
 
-const Section: React.FC<SectionProps> = ({ title, icon, emptyText, children, headerContent }) => {
+const Section: React.FC<SectionProps> = ({ title, icon, emptyText, children, headerContent, isCollapsible = false }) => {
+  const [isCollapsed, setIsCollapsed] = useState(isCollapsible);
   const Icon = icon;
+
+  const handleToggle = () => {
+    if (isCollapsible) {
+      setIsCollapsed(!isCollapsed);
+    }
+  };
+
   return (
     <div className="bg-base2 rounded-sm border-2 border-base01 p-5 shadow-[4px_4px_0px_#93a1a1]">
-      <div className="flex items-center justify-between gap-3 mb-4 border-b-2 border-base1 pb-2">
-        <div className="flex items-center gap-3">
+      <div className={`flex items-center justify-between gap-3 pb-2 ${!isCollapsed ? 'mb-4 border-b-2 border-base1' : ''}`}>
+        <div 
+          className={`flex items-center gap-3 ${isCollapsible ? 'cursor-pointer' : ''}`}
+          onClick={handleToggle}
+          role={isCollapsible ? 'button' : undefined}
+          tabIndex={isCollapsible ? 0 : -1}
+          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleToggle()}
+          aria-expanded={!isCollapsed}
+        >
           <Icon className="w-5 h-5 text-yellow"/>
           <h3 className="text-xl font-bold text-base02">{title}</h3>
+          {isCollapsible && (
+             <motion.div animate={{ rotate: isCollapsed ? -90 : 0 }} transition={{ duration: 0.2 }}>
+                <ChevronDown className="w-5 h-5 text-base01" />
+            </motion.div>
+          )}
         </div>
         {headerContent}
       </div>
-      <div className="space-y-3">
-        {React.Children.count(children) > 0 ? (
-          children
-        ) : (
-          <p className="text-sm text-base01 text-center py-4">{emptyText}</p>
-        )}
-      </div>
+      <AnimatePresence initial={false}>
+      {!isCollapsed && (
+        <motion.div
+            key="content"
+            initial="collapsed"
+            animate="open"
+            exit="collapsed"
+            variants={{
+                open: { opacity: 1, height: "auto" },
+                collapsed: { opacity: 0, height: 0 }
+            }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="overflow-hidden"
+        >
+            <div className="space-y-3">
+            {React.Children.count(children) > 0 ? (
+                children
+            ) : (
+                <p className="text-sm text-base01 text-center py-4">{emptyText}</p>
+            )}
+            </div>
+        </motion.div>
+      )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -233,12 +295,12 @@ const DashboardLayout: React.FC<LayoutProps> = ({ notes, cases, events, tasks, o
           </Section>
         </div>
         <div className="space-y-6">
-          <Section title="Recent Notes" icon={FileText} emptyText={noteSearchQuery ? "No matching notes found." : "No notes yet. Start writing!"} headerContent={noteSearchBar}>
+          <Section title="Recent Notes" icon={FileText} emptyText={noteSearchQuery ? "No matching notes found." : "No notes yet. Start writing!"} headerContent={noteSearchBar} isCollapsible>
             {recentNotes.map(note => (
               <div key={note.id} className="p-3 rounded-sm bg-base3 border-2 border-base1">
                 <p className="font-bold text-base02 truncate">{note.title}</p>
                 <p className="text-sm text-blue font-semibold">{note.subject}</p>
-                <div className="flex justify-between items-end mt-3 pt-3 border-t border-base1">
+                <div className="flex justify-between items-start mt-3 pt-3 border-t border-base1">
                   <NoteAttachments attachments={note.attachments} />
                   <AiButton text="Summarize" onClick={() => onSummarizeNote(note)} />
                 </div>
@@ -349,11 +411,11 @@ const SubjectLayout: React.FC<LayoutProps> = ({ currentView, notes, cases, event
         </div>
       </motion.div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Section title="Notes" icon={FileText} emptyText={noteSearchQuery ? "No matching notes found." : `No notes found for ${currentView}.`} headerContent={noteSearchBar}>
+        <Section title="Notes" icon={FileText} emptyText={noteSearchQuery ? "No matching notes found." : `No notes found for ${currentView}.`} headerContent={noteSearchBar} isCollapsible>
           {notes.map(note => (
             <div key={note.id} className="p-3 rounded-sm bg-base3 border-2 border-base1">
               <p className="font-bold text-base02 truncate">{note.title}</p>
-              <div className="flex justify-between items-end mt-3 pt-3 border-t border-base1">
+              <div className="flex justify-between items-start mt-3 pt-3 border-t border-base1">
                  <NoteAttachments attachments={note.attachments} />
                 <AiButton text="Summarize" onClick={() => onSummarizeNote(note)} />
               </div>
