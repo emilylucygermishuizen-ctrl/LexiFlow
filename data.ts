@@ -1,6 +1,5 @@
-
 import { addDays, subDays } from 'date-fns';
-import type { Note, Case, Event } from './types';
+import type { Note, Case, Event, Task } from './types';
 
 const today = new Date();
 
@@ -32,4 +31,11 @@ export const sampleEvents: Event[] = [
     { id: 5, title: "Legal Writing Class", type: "Class", date: subDays(today, 2), subject: null },
     { id: 6, title: "Admin Law Review", type: "Meeting", date: addDays(today, 1), subject: "Administrative Law" },
     { id: 7, title: "Forensics Lab", type: "Class", date: addDays(today, 3), subject: "Medicina Forensis" },
+];
+
+export const sampleTasks: Task[] = [
+    { id: 1, title: "Outline Torts final", description: "Focus on negligence and strict liability chapters.", isCompleted: false },
+    { id: 2, title: "Book study room for Civ Pro group", description: "Need it for Wednesday evening.", isCompleted: false },
+    { id: 3, title: "Print Commercial Transactions readings", description: "Pages 250-280 for next week's class.", isCompleted: true },
+    { id: 4, title: "Pick up library books", description: "Reservations for 'Admin Law in a Nutshell' is ready.", isCompleted: false },
 ];

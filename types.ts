@@ -1,4 +1,3 @@
-
 import type { LucideProps } from 'lucide-react';
 import type { ForwardRefExoticComponent, RefAttributes } from 'react';
 
@@ -28,6 +27,13 @@ export interface Event {
   type: 'Exam' | 'Assignment' | 'Meeting' | 'Holiday' | 'Class';
   date: Date;
   subject: string | null;
+}
+
+export interface Task {
+  id: number;
+  title: string;
+  description: string;
+  isCompleted: boolean;
 }
 
 export type AppViewName = "Dashboard" | "Medicina Forensis" | "Commercial Transactions" | "Corporation Law" | "Civil Procedure" | "Labour Law" | "Administrative Law";

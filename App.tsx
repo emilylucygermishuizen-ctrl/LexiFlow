@@ -1,16 +1,16 @@
-
 import React, { useState } from 'react';
 import AppNavBar from './components/AppNavBar';
 import DashboardView from './components/DashboardView';
 import AiModal from './components/AiModal';
-import { sampleNotes, sampleCases, sampleEvents } from './data';
+import { sampleNotes, sampleCases, sampleEvents, sampleTasks } from './data';
 import { getDailyFocus, explainCase, generateStudyPlan, summarizeNote } from './services/geminiService';
-import type { Note, Case, Event, ModalState, AppViewName } from './types';
+import type { Note, Case, Event, ModalState, AppViewName, Task } from './types';
 
 export default function App() {
   const [notes, setNotes] = useState<Note[]>(sampleNotes);
   const [cases, setCases] = useState<Case[]>(sampleCases);
   const [events, setEvents] = useState<Event[]>(sampleEvents);
+  const [tasks, setTasks] = useState<Task[]>(sampleTasks);
   
   const [currentView, setCurrentView] = useState<AppViewName>("Dashboard");
 
@@ -99,6 +99,23 @@ export default function App() {
     }
   };
 
+  const handleAddTask = (title: string, description: string) => {
+    if (!title.trim()) return; // Don't add empty tasks
+    const newTask: Task = {
+      id: Date.now(), // simple unique id
+      title,
+      description,
+      isCompleted: false,
+    };
+    setTasks(prevTasks => [newTask, ...prevTasks]);
+  };
+
+  const handleToggleTask = (taskId: number) => {
+    setTasks(tasks.map(task => 
+      task.id === taskId ? { ...task, isCompleted: !task.isCompleted } : task
+    ));
+  };
+
   const handleCloseModal = () => {
     setModalState({ isOpen: false, title: '', content: '', sources: [], isLoading: false });
   };
@@ -111,11 +128,14 @@ export default function App() {
           notes={notes}
           cases={cases}
           events={events}
+          tasks={tasks}
           currentView={currentView}
           onDailyFocus={handleDailyFocus}
           onExplainCase={handleExplainCase}
           onStudyPlan={handleStudyPlan}
           onSummarizeNote={handleSummarizeNote}
+          onAddTask={handleAddTask}
+          onToggleTask={handleToggleTask}
         />
       </div>
       <AiModal 
